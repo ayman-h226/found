@@ -12,8 +12,9 @@ class LogoutPage extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () {
-            // Logique pour déconnecter l'utilisateur ici
-            Navigator.pushReplacementNamed(context, '/login');
+            // Logique pour se déconnecter, comme réinitialiser les données utilisateur
+            // et rediriger vers la page de connexion ou d'accueil.
+            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
           },
           child: Text('Se déconnecter'),
         ),

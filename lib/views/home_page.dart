@@ -1,20 +1,82 @@
-// lib/views/home_page.dart
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Pour formater la date et l'heure
+import '../services/api_service.dart';
+import 'package:searchfield/searchfield.dart'; // Pour l'auto-complétion
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   final TextEditingController gareController = TextEditingController();
   final TextEditingController trainNumberController = TextEditingController();
-  final TextEditingController timeController = TextEditingController();
+  final TextEditingController dateTimeController = TextEditingController();
+
+  List<String>? stationList; // Liste des gares
+  String? selectedCategory; // Stocker la catégorie sélectionnée
+  bool isLoadingStations = false; // Indicateur de chargement
+
+  @override
+  void initState() {
+    super.initState();
+    // On récupère les gares uniquement si besoin, via les saisies de l'utilisateur
+  }
+
+  // Fonction pour récupérer les gares en fonction de l'entrée utilisateur
+  Future<void> fetchStations(String query) async {
+    setState(() {
+      isLoadingStations = true; // Activer le chargement
+    });
+
+    try {
+      final stations = await ApiService().fetchStations(query);
+      setState(() {
+        stationList = stations;
+        print("Liste des gares récupérée : $stationList");
+      });
+    } catch (e) {
+      print('Erreur lors de la récupération des gares: $e');
+    } finally {
+      setState(() {
+        isLoadingStations = false; // Désactiver le chargement
+      });
+    }
+  }
+
+  // Construire chaque bouton de catégorie
+  Widget _buildCategoryButton(BuildContext context, IconData icon, String label) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        setState(() {
+          selectedCategory = label; // Définir la catégorie sélectionnée
+        });
+      },
+      icon: Icon(icon),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.white,
+        backgroundColor: selectedCategory == label
+            ? Theme.of(context).colorScheme.primary
+            : Colors.grey,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Objets Trouvés SNCF'),
+        titleTextStyle: TextStyle(
+          color: Colors.black,
+          fontSize: 23,
+          fontWeight: FontWeight.bold,
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.login),
+            iconSize: 35,
             onPressed: () {
               Navigator.pushNamed(context, '/login');
             },
@@ -30,10 +92,8 @@ class HomePage extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  Center(
-                      child: Image.asset('assets/images/SNCF.png',
-                          width: 100, height: 100)),
-                  SizedBox(height: 12),
+                  Image.asset('assets/images/SNCF.png', width: 100, height: 100),
+                  SizedBox(height: 15),
                   Text(
                     'Bienvenue dans l\'application Objets Trouvés',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -42,103 +102,165 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 20),
-            // Champs de recherche
-            TextField(
+            SizedBox(height: 40),
+
+            // Champs de recherche - Gare de départ
+            SearchField(
               controller: gareController,
-              decoration: InputDecoration(
-                labelText: 'Gare de départ',
+              suggestions: stationList != null
+                  ? stationList!
+                  .map((station) => SearchFieldListItem<String>(station))
+                  .toList() // Correction du typage avec <String>
+                  : [],
+              searchInputDecoration: SearchInputDecoration( // Utilisation correcte de InputDecoration
+                labelText: 'Gare de départ *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
+                suffixIcon: isLoadingStations
+                    ? Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : Icon(Icons.search),
               ),
+              onSuggestionTap: (suggestion) {
+                gareController.text = suggestion.item! as String; // Typage explicite en String
+              },
+              onSearchTextChanged: (query) {
+                if (query.isNotEmpty) {
+                  fetchStations(query); // Récupérer les gares correspondant à la saisie
+                }
+              },
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 15),
+
+            // Numéro de train (optionnel)
             TextField(
               controller: trainNumberController,
               decoration: InputDecoration(
-                labelText: 'Numéro de train',
+                labelText: 'Numéro de train (optionnel)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.train),
               ),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 15),
+
+            // Date et Heure de départ
             TextField(
-              controller: timeController,
+              controller: dateTimeController,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Heure de départ',
+                labelText: 'Date et Heure de départ *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.access_time),
               ),
               onTap: () async {
-                TimeOfDay? selectedTime = await showTimePicker(
+                // Sélection de la date et de l'heure
+                DateTime? selectedDate = await showDatePicker(
                   context: context,
-                  initialTime: TimeOfDay.now(),
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2010),
+                  lastDate: DateTime(2050),
                 );
-                if (selectedTime != null) {
-                  timeController.text = selectedTime.format(context);
+
+                if (selectedDate != null) {
+                  TimeOfDay? selectedTime = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+
+                  if (selectedTime != null) {
+                    DateTime selectedDateTime = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      selectedTime.hour,
+                      selectedTime.minute,
+                    );
+                    dateTimeController.text = DateFormat('dd MMMM yyyy HH:mm')
+                        .format(selectedDateTime);
+                  }
                 }
               },
             ),
             SizedBox(height: 20),
+
             // Boutons de catégorie
             Text(
               'Catégories d\'objets',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 25),
             Wrap(
-              spacing: 8.0, // Espacement horizontal entre les boutons
-              runSpacing:
-                  8.0, // Espacement vertical entre les lignes de boutons
+              spacing: 8.0,
+              runSpacing: 8.0,
               children: [
                 _buildCategoryButton(context, Icons.phone_android, 'Téléphone'),
                 _buildCategoryButton(context, Icons.backpack, 'Sac à dos'),
-                _buildCategoryButton(
-                    context, Icons.wallet_travel, 'Portefeuille'),
+                _buildCategoryButton(context, Icons.wallet_travel, 'Portefeuille'),
                 _buildCategoryButton(context, Icons.laptop, 'Ordinateur'),
                 _buildCategoryButton(context, Icons.headphones, 'Casque Audio'),
                 _buildCategoryButton(context, Icons.watch, 'Montre'),
-                // Ajoutez d'autres catégories selon les besoins
+                _buildCategoryButton(context, Icons.add_circle_outline, 'Autres'),
               ],
             ),
-            Spacer(),
+            SizedBox(height: 20),
+            Text(
+              '* Champs obligatoires',
+              style: TextStyle(color: Colors.grey),
+            ),
+            SizedBox(height: 20),
+
             // Bouton de recherche
             Center(
               child: ElevatedButton(
-                onPressed: () {
-                  // Appel de la fonction de recherche ici
-                  _searchObjects();
+                onPressed: () async {
+                  if (gareController.text.isEmpty || dateTimeController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Veuillez remplir les champs obligatoires'),
+                    ));
+                    return;
+                  }
+
+                  final stationName = gareController.text;
+                  final category = selectedCategory ?? ''; // Catégorie sélectionnée
+                  final trainNumber = trainNumberController.text;
+
+                  try {
+                    final results = await ApiService().fetchLostItems(
+                      stationName: stationName,
+                      category: category,
+                      trainNumber: trainNumber,
+                    );
+                    Navigator.pushNamed(
+                        context, '/search_results', arguments: results);
+                  } catch (e) {
+                    print('Erreur lors de la recherche: $e');
+                  }
                 },
                 child: Text('Rechercher'),
+              ),
+            ),
+            SizedBox(height: 15),
+
+            // Bouton "Afficher tout"
+            Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  try {
+                    final results = await ApiService().fetchRecentItems();
+                    Navigator.pushNamed(
+                        context, '/search_results', arguments: results);
+                  } catch (e) {
+                    print('Erreur lors de la récupération des objets: $e');
+                  }
+                },
+                child: Text('Afficher les 100 derniers objets trouvés'),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  // Fonction pour construire chaque bouton de catégorie
-  Widget _buildCategoryButton(
-      BuildContext context, IconData icon, String label) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        // Logique de filtrage par catégorie ici
-      },
-      icon: Icon(icon),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        //onPrimary: Colors.white,
-      ),
-    );
-  }
-
-  // Exemple de fonction de recherche
-  void _searchObjects() {
-    // Logique pour déclencher la recherche en utilisant l'API de la SNCF
-    // Utilisez les valeurs de gareController, trainNumberController, et timeController
   }
 }

@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class SearchResultsPage extends StatelessWidget {
-  final List<Map<String, dynamic>> searchResults;
+  final List<dynamic> searchResults;
 
   SearchResultsPage({required this.searchResults});
 
@@ -11,36 +11,29 @@ class SearchResultsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Résultats de Recherche'),
+        title: Text('Résultats de la recherche'),
       ),
       body: searchResults.isEmpty
           ? Center(
-              child: Text(
-                'Aucun objet trouvé.',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            )
+        child: Text('Aucun objet trouvé.'),
+      )
           : ListView.builder(
-              itemCount: searchResults.length,
-              itemBuilder: (context, index) {
-                final result = searchResults[index];
-                return ListTile(
-                  title: Text(result['name'] ?? 'Objet inconnu'),
-                  subtitle: Text(
-                      'Gare: ${result['station']}\nTrain: ${result['train_number']}'),
-                  trailing: Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    // Logique pour afficher les détails de l'objet si nécessaire
-                  },
-                );
-              },
+        itemCount: searchResults.length,
+        itemBuilder: (context, index) {
+          final item = searchResults[index]['fields'];
+
+          return ListTile(
+            leading: Icon(Icons.find_in_page),
+            title: Text(item['gc_obo_type_c'] ?? 'Type inconnu'),
+            subtitle: Text(
+              'Gare: ${item['gc_obo_gare_origine_r_name'] ?? 'Non précisé'}',
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pop(context);
+            trailing: Text(
+              'Date: ${item['date'] ?? 'Inconnue'}',
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
         },
-        child: Icon(Icons.arrow_back),
-        tooltip: 'Retour',
       ),
     );
   }

@@ -22,7 +22,6 @@ class LoginPage extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
               ),
               keyboardType: TextInputType.emailAddress,
             ),
@@ -32,22 +31,32 @@ class LoginPage extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Mot de passe',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
             ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // Logique de connexion ici
-              },
-              child: Text('Se connecter'),
+            SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  // Logique pour la connexion
+                  final email = emailController.text;
+                  final password = passwordController.text;
+
+                  // Logique pour vérifier les identifiants ici.
+                  // Appel à une fonction pour l'authentification.
+                },
+                child: Text('Se connecter'),
+              ),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/signup');
-              },
-              child: Text('Créer un compte'),
+            SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  // Rediriger vers la page d'inscription
+                  Navigator.pushNamed(context, '/signup');
+                },
+                child: Text('Pas encore de compte ? Inscrivez-vous'),
+              ),
             ),
           ],
         ),
