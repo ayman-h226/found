@@ -10,17 +10,28 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController gareController = TextEditingController();
-  final TextEditingController trainNumberController = TextEditingController();
   final TextEditingController dateTimeController = TextEditingController();
 
   List<String>? stationList; // Liste des gares
   String? selectedCategory; // Stocker la catégorie sélectionnée
   bool isLoadingStations = false; // Indicateur de chargement
 
+  // Liste des catégories disponibles
+  final List<String> categories = [
+    'Vêtements',
+    'Bagagerie',
+    'Papeterie',
+    'Electronique',
+    'Clés',
+    'Bijoux, Montres',
+    'Pièces d\'identité',
+    'Sport et Loisirs',
+    'Divers'
+  ];
+
   @override
   void initState() {
     super.initState();
-    // On récupère les gares uniquement si besoin, via les saisies de l'utilisateur
   }
 
   // Fonction pour récupérer les gares en fonction de l'entrée utilisateur
@@ -45,20 +56,40 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Construire chaque bouton de catégorie
-  Widget _buildCategoryButton(BuildContext context, IconData icon, String label) {
-    return ElevatedButton.icon(
-      onPressed: () {
+  Widget _buildCategoryButton(BuildContext context, String label, String assetImagePath) {
+    bool isSelected = selectedCategory == label;
+
+    return GestureDetector(
+      onTap: () {
         setState(() {
           selectedCategory = label; // Définir la catégorie sélectionnée
         });
       },
-      icon: Icon(icon),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: selectedCategory == label
-            ? Theme.of(context).colorScheme.primary
-            : Colors.grey,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blueAccent.withOpacity(0.3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.blueAccent : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        padding: EdgeInsets.all(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(assetImagePath, width: 40, height: 40),
+            SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.blueAccent : Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -73,15 +104,6 @@ class _HomePageState extends State<HomePage> {
           fontSize: 23,
           fontWeight: FontWeight.bold,
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.login),
-            iconSize: 35,
-            onPressed: () {
-              Navigator.pushNamed(context, '/login');
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -110,9 +132,9 @@ class _HomePageState extends State<HomePage> {
               suggestions: stationList != null
                   ? stationList!
                   .map((station) => SearchFieldListItem<String>(station))
-                  .toList() // Correction du typage avec <String>
+                  .toList()
                   : [],
-              searchInputDecoration: SearchInputDecoration( // Utilisation correcte de InputDecoration
+              searchInputDecoration: SearchInputDecoration(
                 labelText: 'Gare de départ *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
@@ -131,17 +153,6 @@ class _HomePageState extends State<HomePage> {
                   fetchStations(query); // Récupérer les gares correspondant à la saisie
                 }
               },
-            ),
-            SizedBox(height: 15),
-
-            // Numéro de train (optionnel)
-            TextField(
-              controller: trainNumberController,
-              decoration: InputDecoration(
-                labelText: 'Numéro de train (optionnel)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.train),
-              ),
             ),
             SizedBox(height: 15),
 
@@ -177,8 +188,8 @@ class _HomePageState extends State<HomePage> {
                       selectedTime.hour,
                       selectedTime.minute,
                     );
-                    dateTimeController.text = DateFormat('dd MMMM yyyy HH:mm')
-                        .format(selectedDateTime);
+                    dateTimeController.text =
+                        DateFormat('dd MMMM yyyy HH:mm').format(selectedDateTime);
                   }
                 }
               },
@@ -186,23 +197,59 @@ class _HomePageState extends State<HomePage> {
             SizedBox(height: 20),
 
             // Boutons de catégorie
-            Text(
-              'Catégories d\'objets',
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Catégories d\'objets',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(
+                  '(Faites défiler vers le bas)',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+              ],
             ),
             SizedBox(height: 25),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: [
-                _buildCategoryButton(context, Icons.phone_android, 'Téléphone'),
-                _buildCategoryButton(context, Icons.backpack, 'Sac à dos'),
-                _buildCategoryButton(context, Icons.wallet_travel, 'Portefeuille'),
-                _buildCategoryButton(context, Icons.laptop, 'Ordinateur'),
-                _buildCategoryButton(context, Icons.headphones, 'Casque Audio'),
-                _buildCategoryButton(context, Icons.watch, 'Montre'),
-                _buildCategoryButton(context, Icons.add_circle_outline, 'Autres'),
-              ],
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+                children: categories.map((category) {
+                  String iconPath = 'assets/icons/default.png'; // Définir un chemin d'icône par défaut
+                  switch (category) {
+                    case 'Vêtements':
+                      iconPath = 'assets/icons/vetements.png';
+                      break;
+                    case 'Bagagerie':
+                      iconPath = 'assets/icons/sacs.png';
+                      break;
+                    case 'Papeterie':
+                      iconPath = 'assets/icons/documents.png';
+                      break;
+                    case 'Electronique':
+                      iconPath = 'assets/icons/electronique.png';
+                      break;
+                    case 'Clés':
+                      iconPath = 'assets/icons/cles.png';
+                      break;
+                    case 'Bijoux, Montres':
+                      iconPath = 'assets/icons/bijoux.png';
+                      break;
+                    case 'Pièces d\'identité':
+                      iconPath = 'assets/icons/documents.png';
+                      break;
+                    case 'Sport et Loisirs':
+                      iconPath = 'assets/icons/sport.png';
+                      break;
+                    case 'Divers':
+                      iconPath = 'assets/icons/divers.png';
+                      break;
+                  }
+                  return _buildCategoryButton(context, category, iconPath);
+                }).toList(),
+              ),
             ),
             SizedBox(height: 20),
             Text(
@@ -223,17 +270,33 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   final stationName = gareController.text;
-                  final category = selectedCategory ?? ''; // Catégorie sélectionnée
-                  final trainNumber = trainNumberController.text;
+                  final category = selectedCategory ?? 'Divers'; // Catégorie sélectionnée
+                  final dateTime = dateTimeController.text;
 
                   try {
                     final results = await ApiService().fetchLostItems(
                       stationName: stationName,
                       category: category,
-                      trainNumber: trainNumber,
+                      dateTime: dateTime,
                     );
-                    Navigator.pushNamed(
-                        context, '/search_results', arguments: results);
+
+                    if (results.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            'Aucun objet de type "$category" trouvé pour la gare "$stationName" à l\'heure "$dateTime". Essayez avec des entrées différentes.'),
+                      ));
+                    } else {
+                      Navigator.pushNamed(
+                        context,
+                        '/search_results',
+                        arguments: {
+                          'results': results,
+                          'stationName': stationName,
+                          'category': category,
+                          'dateTime': dateTime,
+                        },
+                      );
+                    }
                   } catch (e) {
                     print('Erreur lors de la recherche: $e');
                   }
@@ -250,12 +313,17 @@ class _HomePageState extends State<HomePage> {
                   try {
                     final results = await ApiService().fetchRecentItems();
                     Navigator.pushNamed(
-                        context, '/search_results', arguments: results);
+                      context,
+                      '/search_results',
+                      arguments: {
+                        'results': results,
+                      },
+                    );
                   } catch (e) {
                     print('Erreur lors de la récupération des objets: $e');
                   }
                 },
-                child: Text('Afficher les 100 derniers objets trouvés'),
+                child: Text('Afficher les derniers objets trouvés'),
               ),
             ),
           ],

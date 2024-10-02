@@ -1,11 +1,7 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'views/home_page.dart';
-import 'views/login_page.dart';
-import 'views/signup_page.dart';
-import 'views/custom_home_page.dart';
 import 'views/search_results_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -42,15 +38,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => HomePage(),
-        '/login': (context) => LoginPage(),
-        '/signup': (context) => SignupPage(),
-        '/custom_home': (context) => CustomHomePage(
-          userName: 'Utilisateur',
-          foundItemsCount: 0,
-        ),
-        '/search_results': (context) => SearchResultsPage(
-          searchResults: [],
-        ),
+        '/search_results': (context) => SearchResultsPage(),
       },
     );
   }
