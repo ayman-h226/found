@@ -1,53 +1,52 @@
 import 'package:flutter/material.dart';
 
 class SearchResultsPage extends StatelessWidget {
+  // Dictionary mapping categories to keywords for more precise searching
   final Map<String, List<String>> categoriesDictionary = {
-    'Portefeuille': ['Portefeuille', 'Porte-monnaie', 'argent', 'titres', 'carte bancaire', 'CB', 'portefeuille'],
-    'Documents': ['Documents', 'Papiers', 'Identité', 'permis', 'pièce', 'calendrier', 'agenda', 'livre'],
-    'Sacs': ['Sac', 'bagages', 'valises', 'cartables', 'sacoche', 'sac à dos', 'bandoulière', 'valise'],
-    'Electronique': ['Electronique', 'téléphone', 'portable', 'ordinateur', 'caméscope', 'appareil', 'photo', 'vidéo', 'câble'],
-    'Affaires d\'enfants': ['Affaires d\'enfants', 'doudou', 'peluche', 'jouet', 'trousse', 'enfant', 'biberon', 'dossier', 'scolaire'],
-    'Bijoux': ['Bijoux', 'montres', 'bracelet', 'collier', 'bague', 'pendentif', 'bijou', 'gourmette', 'montre'],
-    'Vêtements': ['Vêtements', 'chaussures', 'manteau', 'veste', 'blouson', 'cape', 'chapeau', 'gants', 'écharpe', 'pull'],
-    'Clés': ['Clés', 'badge', 'porte-clés', 'magnétique', 'clé', 'badge magnétique', 'carte d\'accès', 'porte-clefs'],
-    'Sport': ['Sport', 'ballon', 'raquette', 'tennis', 'vélos', 'trottinettes', 'rollers', 'casque', 'sportif'],
-    'Divers': ['Divers', 'parapluie', 'lunettes', 'sacoche', 'autre', 'divers', 'inconnu', 'non précisé'],
+    'Vêtements': ['vêtements', 'veste', 'chaussures', 'manteau', 'blouson', 'pantalon', 'robe', 'chemise', 'pull', 'gilet'],
+    'Bagagerie': ['sac', 'valise', 'cartable', 'sac à dos', 'sacoche', 'bagages'],
+    'Papeterie': ['livre', 'agenda', 'papeterie', 'cahier', 'stylo', 'bloc-notes', 'fournitures scolaires'],
+    'Electronique': ['électronique', 'téléphone', 'ordinateur', 'tablette', 'smartphone', 'appareil photo', 'caméra'],
+    'Clés': ['clé', 'badge', 'porte-clés'],
+    'Bijoux': ['bijou', 'bracelet', 'collier', 'bague', 'pendentif', 'montre'],
+    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour'],
+    'Sport': ['sport', 'ballon', 'raquette', 'équipement sportif', 'vélo'],
+    'Porte-monnaie / Portefeuille': ['portefeuille', 'porte-monnaie', 'carte de crédit', 'CB', 'argent'],
+    'Divers': ['parapluie', 'lunettes', 'accessoires', 'divers'],
   };
 
   @override
   Widget build(BuildContext context) {
-    // Récupération des résultats passés via les arguments
+    // Retrieve results passed through the arguments
     final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final List<dynamic>? searchResults = arguments?['results'];
-
-    print('Résultats reçus dans SearchResultsPage: $searchResults');
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Résultats de la recherche'),
       ),
       body: searchResults == null || searchResults.isEmpty
-          ? _buildNoResultsMessage(context) // Afficher un message en cas d'absence de résultats
-          : _buildResultsList(searchResults), // Afficher la liste des résultats
+          ? _buildNoResultsMessage(context)
+          : _buildResultsList(searchResults),
     );
   }
 
-  // Fonction pour construire l'affichage de la liste des résultats
+  // Function to build the search results list view
   Widget _buildResultsList(List<dynamic> searchResults) {
     return ListView.builder(
       itemCount: searchResults.length,
       itemBuilder: (context, index) {
         final item = searchResults[index]['fields'];
 
-        final typeObjet = item['gc_obo_type_c']?.toString() ?? 'Type inconnu';
-        final gareOrigine = item['gc_obo_gare_origine_r_name']?.toString() ?? 'Non précisé';
-        final date = item['date']?.toString() ?? 'Inconnue';
-        final iconPath = _getIconForCategory(typeObjet);
+        final String typeObjet = item['gc_obo_type_c']?.toString() ?? 'Type inconnu';
+        final String gareOrigine = item['gc_obo_gare_origine_r_name']?.toString() ?? 'Non précisé';
+        final String date = item['date']?.toString() ?? 'Inconnue';
+        final String? iconPath = _getIconForCategory(typeObjet);
 
         return ListTile(
           leading: iconPath != null
               ? Image.asset(iconPath, width: 40, height: 40)
-              : Icon(Icons.help_outline, size: 40), // Icône générique si pas d'image
+              : Icon(Icons.help_outline, size: 40), // Generic icon if no image available
           title: Text(
             typeObjet,
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -62,12 +61,12 @@ class SearchResultsPage extends StatelessWidget {
     );
   }
 
-  // Fonction pour construire le message en cas d'absence de résultats
+  // Function to build the message when no search results are found
   Widget _buildNoResultsMessage(BuildContext context) {
     final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final stationName = arguments?['stationName'] ?? 'la gare sélectionnée';
-    final category = arguments?['category'] ?? 'le type d\'objet sélectionné';
-    final dateTime = arguments?['dateTime'] ?? 'la date et l\'heure sélectionnées';
+    final String stationName = arguments?['stationName'] ?? 'la gare sélectionnée';
+    final String category = arguments?['category'] ?? 'le type d\'objet sélectionné';
+    final String dateTime = arguments?['dateTime'] ?? 'la date et l\'heure sélectionnées';
 
     return Center(
       child: Padding(
@@ -106,44 +105,44 @@ class SearchResultsPage extends StatelessWidget {
     );
   }
 
-  // Fonction pour obtenir l'icône correspondante à une catégorie spécifique d'objet
+  // Function to get the icon for a specific object category
   String? _getIconForCategory(String category) {
     category = category.toLowerCase();
     for (final entry in categoriesDictionary.entries) {
       for (final keyword in entry.value) {
         if (category.contains(keyword.toLowerCase())) {
           String iconName = entry.key.toLowerCase().replaceAll(' ', '_');
-          // Ajuster le nom des icônes pour correspondre aux fichiers dans les assets
+          // Adjust icon names to match the assets
           switch (iconName) {
-            case 'clés':
-              iconName = 'cles'; // Correspond au nom de l'asset `cles.png`
+            case 'vêtements':
+              iconName = 'vetements';
               break;
-            case 'affaires_d\'enfants':
-              iconName = 'enfants'; // Correspond au nom de l'asset `enfants.png`
+            case 'bagagerie':
+              iconName = 'sacs';
               break;
-            case 'portefeuille':
-              iconName = 'portefeuille'; // Correspond au nom de l'asset `portefeuille.png`
-              break;
-            case 'documents':
-              iconName = 'documents'; // Correspond au nom de l'asset `documents.png`
-              break;
-            case 'sacs':
-              iconName = 'sacs'; // Correspond au nom de l'asset `sacs.png`
+            case 'papeterie':
+              iconName = 'book';
               break;
             case 'electronique':
-              iconName = 'electronique'; // Correspond au nom de l'asset `electronique.png`
+              iconName = 'electronique';
+              break;
+            case 'clés':
+              iconName = 'cles';
               break;
             case 'bijoux':
-              iconName = 'bijoux'; // Correspond au nom de l'asset `bijoux.png`
+              iconName = 'bijoux';
               break;
-            case 'vêtements':
-              iconName = 'vetements'; // Correspond au nom de l'asset `vetements.png`
+            case 'pièces':
+              iconName = 'documents';
               break;
             case 'sport':
-              iconName = 'sport'; // Correspond au nom de l'asset `sport.png`
+              iconName = 'sport';
+              break;
+            case 'Porte-monnaie / Portefeuille':
+              iconName = 'portefeuille';
               break;
             case 'divers':
-              iconName = 'divers'; // Correspond au nom de l'asset `divers.png`
+              iconName = 'divers';
               break;
             default:
               return null;
@@ -152,6 +151,6 @@ class SearchResultsPage extends StatelessWidget {
         }
       }
     }
-    return null; // Retourne null si aucune icône ne correspond à la catégorie
+    return null; // Return null if no icon matches the category
   }
 }
