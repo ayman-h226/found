@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class SearchResultsPage extends StatelessWidget {
-  // Dictionary mapping categories to keywords for more precise searching
+  // Dictionnaire des catégories d'objets et de leurs mots-clés
   final Map<String, List<String>> categoriesDictionary = {
     'Vêtements': ['vêtements', 'veste', 'chaussures', 'manteau', 'blouson', 'pantalon', 'robe', 'chemise', 'pull', 'gilet'],
     'Bagagerie': ['sac', 'valise', 'cartable', 'sac à dos', 'sacoche', 'bagages'],
@@ -9,46 +9,54 @@ class SearchResultsPage extends StatelessWidget {
     'Electronique': ['électronique', 'téléphone', 'ordinateur', 'tablette', 'smartphone', 'appareil photo', 'caméra'],
     'Clés': ['clé', 'badge', 'porte-clés'],
     'Bijoux': ['bijou', 'bracelet', 'collier', 'bague', 'pendentif', 'montre'],
-    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour','papiers'],
+    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour', 'papiers'],
     'Sport': ['sport', 'ballon', 'raquette', 'équipement sportif', 'vélo'],
-    'Porte-monnaie': ['argent','portefeuille', 'porte-monnaie', 'carte de crédit', 'CB', 'argent'],
+    'Porte-monnaie': ['argent', 'portefeuille', 'porte-monnaie', 'carte de crédit', 'CB'],
     'Divers': ['parapluie', 'lunettes', 'accessoires', 'divers'],
   };
 
   @override
   Widget build(BuildContext context) {
-    // Retrieve results passed through the arguments
+    // Récupération des arguments passés à cette page
     final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final List<dynamic>? searchResults = arguments?['results'];
-
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final bool isApproximate = args['isApproximate'] ?? false;
-
-    if (isApproximate) {
-      // Afficher un message spécifique pour indiquer que les résultats sont autour de l'heure spécifiée
-      Text(
-        'Aucun objet trouvé à l\'heure exacte. Voici les objets trouvés autour de cette heure.',
-        style: TextStyle(color: Colors.orange, fontSize: 16),
-      );
-    }
+    final bool isApproximate = arguments?['isApproximate'] ?? false;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Résultats de la recherche'),
       ),
-      body: searchResults == null || searchResults.isEmpty
-          ? _buildNoResultsMessage(context)
-          : _buildResultsList(searchResults),
+      body: Column(
+        children: [
+          if (isApproximate) _buildApproximateMessage(), // Affiche un message si les résultats sont approximatifs
+          Expanded(
+            child: searchResults == null || searchResults.isEmpty
+                ? _buildNoResultsMessage(context) // Affiche un message s'il n'y a pas de résultats
+                : _buildResultsList(searchResults), // Affiche la liste des résultats
+          ),
+        ],
+      ),
     );
   }
 
-  // Function to build the search results list view
+  /// Construit un message indiquant que les résultats sont approximatifs
+  Widget _buildApproximateMessage() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        'Aucun objet trouvé à l\'heure exacte. Voici les objets trouvés autour de cette heure.',
+        style: TextStyle(color: Colors.orange, fontSize: 16),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  /// Construit la liste des résultats de recherche
   Widget _buildResultsList(List<dynamic> searchResults) {
     return ListView.builder(
       itemCount: searchResults.length,
       itemBuilder: (context, index) {
         final item = searchResults[index]['fields'];
-
         final String typeObjet = item['gc_obo_type_c']?.toString() ?? 'Type inconnu';
         final String gareOrigine = item['gc_obo_gare_origine_r_name']?.toString() ?? 'Non précisé';
         final String date = item['date']?.toString() ?? 'Inconnue';
@@ -57,7 +65,7 @@ class SearchResultsPage extends StatelessWidget {
         return ListTile(
           leading: iconPath != null
               ? Image.asset(iconPath, width: 40, height: 40)
-              : Icon(Icons.help_outline, size: 40), // Generic icon if no image available
+              : Icon(Icons.help_outline, size: 40), // Icône par défaut si aucune icône n'est trouvée
           title: Text(
             typeObjet,
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -72,7 +80,7 @@ class SearchResultsPage extends StatelessWidget {
     );
   }
 
-  // Function to build the message when no search results are found
+  /// Construit le message en cas d'absence de résultats
   Widget _buildNoResultsMessage(BuildContext context) {
     final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final String stationName = arguments?['stationName'] ?? 'la gare sélectionnée';
@@ -116,14 +124,15 @@ class SearchResultsPage extends StatelessWidget {
     );
   }
 
-  // Function to get the icon for a specific object category
+  /// Obtient le chemin de l'icône correspondant à une catégorie d'objet
   String? _getIconForCategory(String category) {
     category = category.toLowerCase();
     for (final entry in categoriesDictionary.entries) {
       for (final keyword in entry.value) {
         if (category.contains(keyword.toLowerCase())) {
           String iconName = entry.key.toLowerCase().replaceAll(' ', '_');
-          // Adjust icon names to match the assets
+
+          // Ajuster les noms des icônes pour correspondre aux assets
           switch (iconName) {
             case 'vêtements':
               iconName = 'vetements';
@@ -162,6 +171,6 @@ class SearchResultsPage extends StatelessWidget {
         }
       }
     }
-    return null; // Return null if no icon matches the category
+    return null; // Retourne null si aucune icône ne correspond à la catégorie
   }
 }

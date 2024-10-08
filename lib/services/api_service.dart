@@ -4,51 +4,30 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart'; // Importer pour initialiser les données de locale
 
 class ApiService {
-  // Base URL pour récupérer les objets trouvés
+  // URL de base pour récupérer les objets trouvés
   final String baseUrl = 'https://data.sncf.com/api/records/1.0/search/';
 
   // URL pour récupérer la liste des gares via Open Data SNCF
   final String stationsUrl =
       'https://ressources.data.sncf.com/api/records/1.0/search/?dataset=referentiel-gares-voyageurs';
 
-  // Dictionnaires de mots-clés pour chaque catégorie
+  // Dictionnaire de mots-clés pour chaque catégorie
   final Map<String, List<String>> categoryDictionaries = {
-    'Vêtements': [
-      'vêtements', 'veste', 'chaussures', 'manteau', 'blouson', 'pantalon', 'robe', 'chemise', 'pull', 'gilet', 'blazer', 'parka', 'cape'
-    ],
-    'Bagagerie et Sacs': [
-      'bagagerie', 'sac', 'valise', 'cartable', 'sac à dos', 'sacoche', 'sac de voyage', 'sac à main', 'trolley', 'porte-documents', 'sac sur roulettes', 'sac d\'enseigne'
-    ],
-    'Papeterie': [
-      'livre', 'agenda', 'papeterie', 'cahier', 'stylo', 'calendrier', 'bloc-notes', 'trousse', 'papier', 'fournitures scolaires'
-    ],
-    'Electronique': [
-      'électronique', 'ordinateur', 'téléphone', 'appareil photo', 'tablette', 'caméra', 'smartphone', 'chargeur', 'accessoires électroniques', 'montre connectée', 'tablette tactile protégée', 'ordinateur portable', 'téléphone portable protégé'
-    ],
-    'Clés': [
-      'clé', 'Clés' 'badge', 'porte-clés', 'carte d\'accès', 'carte de sécurité', 'clé USB', 'serrure', 'cadenas', 'boîte à clés', 'badge d\'identification', 'badge magnétique'
-    ],
-    'Bijoux': [
-      'bijoux', 'montres', 'bracelet', 'collier', 'bague', 'pendentif', 'boucles d\'oreilles', 'diamant', 'parure', 'broche'
-    ],
-    'Portefeuille': [
-      'porte-monnaie', 'portefeuille', 'carte de crédit', 'CB', 'argent' ,'argent', 'titres', 'carte bancaire', 'carte de crédit'
-    ],
-    'Pièces': [
-      'pièces d\'identité', 'carte d\'identité', 'passeport', 'permis de conduire', 'carte Vitale', 'titre de séjour', 'permis de travail', 'document officiel', 'billet', 'autre pièce ou papier personnel'
-    ],
-    'Sport': [
-      'sport', 'ballon', 'raquette', 'vélo', 'trottinette', 'gants de boxe', 'patins', 'bâton de randonnée', 'sac de sport', 'tente', 'articles de sport', 'outils', 'accessoires'
-    ],
-    'Divers': [
-      'divers', 'parapluie', 'tente', 'objets divers', 'lunettes', 'accessoires', 'autre', 'inconnus', 'autres divers'
-    ],
+    'Vêtements': ['vêtements', 'veste', 'chaussures', 'manteau', 'blouson', 'pantalon', 'robe', 'chemise', 'pull', 'gilet'],
+    'Bagagerie': ['bagagerie', 'sac', 'valise', 'cartable', 'sac à dos', 'sacoche', 'sac de voyage'],
+    'Papeterie': ['livre', 'agenda', 'papeterie', 'cahier', 'stylo', 'bloc-notes', 'fournitures scolaires'],
+    'Electronique': ['électronique', 'ordinateur', 'téléphone', 'appareil photo', 'tablette', 'caméra'],
+    'Clés': ['clé', 'badge', 'porte-clés', 'carte d\'accès'],
+    'Bijoux': ['bijoux', 'bracelet', 'collier', 'bague', 'pendentif', 'montre'],
+    'Portefeuille': ['porte-monnaie', 'portefeuille', 'carte de crédit', 'argent'],
+    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis de conduire'],
+    'Sport': ['sport', 'ballon', 'raquette', 'vélo', 'trottinette', 'gants de boxe'],
+    'Divers': ['divers', 'parapluie', 'lunettes', 'accessoires'],
   };
 
   // Fonction pour récupérer les gares en fonction de l'entrée utilisateur
   Future<List<String>> fetchStations(String query) async {
     final uri = Uri.parse('$stationsUrl&q=$query');
-
     print("Requête pour les gares : $uri");
 
     final response = await http.get(uri);
@@ -68,7 +47,7 @@ class ApiService {
     }
   }
 
-  // Fonction pour effectuer les requêtes avec des filtres dynamiques
+  // Fonction privée pour effectuer les requêtes avec des filtres dynamiques
   Future<List<dynamic>> _fetchLostItems({
     String? stationName,
     String? category,
@@ -81,6 +60,7 @@ class ApiService {
     try {
       await initializeDateFormatting('fr_FR');
 
+      // Déclaration des paramètres de la requête
       final Map<String, String> queryParams = {
         'dataset': 'objets-trouves-restitution',
         'rows': '20',
@@ -88,59 +68,50 @@ class ApiService {
         'timezone': 'Europe/Paris',
       };
 
-      // Construction de la requête principale `q` avec les filtres
+      // Initialisation de la variable pour la requête dynamique `q`
       String q = '';
 
-      // N'ajouter le filtre de la station que si stationName n'est pas null
+      // Filtre de la station si spécifiée
       if (stationName != null && stationName.isNotEmpty) {
         queryParams['refine.gare_origine_r_name'] = stationName;
-
       }
 
-
-      // Gestion des dates dans la requête
+      // Gestion des filtres de date dans la requête
       if (fromLastLaunch && lastLaunchDate != null) {
         String formattedLastLaunchDate = DateFormat('yyyy-MM-ddTHH:mm:ss').format(lastLaunchDate);
         q = 'date >= "$formattedLastLaunchDate"';
       } else if (dateTime != null && exactDate) {
-        // Conversion de la date spécifiée en ISO 8601
         try {
-          // Utilisez 'fr_FR' pour le format de date français et spécifiez correctement le format
           DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR').parseLoose(dateTime);
           String formattedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(parsedDateTime);
-          q = 'date="$formattedDateTime" AND gc_obo_gare_origine_r_name = "$stationName"';
-
+          q = 'date="$formattedDateTime" AND gc_obo_gare_origine_r_name="$stationName"';
         } catch (e) {
           print('Erreur de format de date : $e');
           throw FormatException('Erreur lors de la conversion de la date');
         }
       } else if (dateTime != null && aroundDate) {
-        // Recherche autour de la date spécifiée (±1h)
         DateTime parsedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').parse(dateTime);
         DateTime oneHourBefore = parsedDateTime.subtract(Duration(hours: 1));
         DateTime oneHourAfter = parsedDateTime.add(Duration(hours: 1));
         String beforeDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(oneHourBefore);
         String afterDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(oneHourAfter);
-        q = 'date>="$beforeDateTime" AND date<="$afterDateTime" AND gc_obo_gare_origine_r_name = "$stationName"';
+        q = 'date>="$beforeDateTime" AND date<="$afterDateTime" AND gc_obo_gare_origine_r_name="$stationName"';
       }
 
-      // Ajout des filtres pour la catégorie
+      // Ajout des filtres pour la catégorie dans la requête
       if (category != null && categoryDictionaries.containsKey(category)) {
         final keywords = categoryDictionaries[category] ?? [];
         final String keywordsQuery = keywords.map((word) => '"$word"').join(' OR ');
 
-        // Ajouter les filtres directement dans la requête
+        // Ajout des filtres de catégorie à la requête `q`
         if (q.isNotEmpty) {
-          // Si `q` contient déjà des conditions, on ajoute les mots-clés avec `AND`
           q += ' AND (gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
         } else {
-          // Sinon, on commence la requête avec les mots-clés
           q = '(gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
         }
       }
 
       if (q.isNotEmpty) {
-        print(q);
         queryParams['q'] = q;
       }
 
@@ -153,7 +124,7 @@ class ApiService {
         final data = jsonDecode(response.body);
         List<dynamic> records = data['records'];
 
-        // Filtrer les objets qui n'ont pas été restitués
+        // Filtrer les objets non restitués
         records = records.where((record) {
           return record['fields']['gc_obo_date_heure_restitution_c'] == null;
         }).toList();
@@ -187,7 +158,8 @@ class ApiService {
   Future<List<dynamic>> fetchLostItemsAroundDate(
       String stationName,
       String category,
-      String dateTime) async {
+      String dateTime,
+      ) async {
     return await _fetchLostItems(
       stationName: stationName,
       category: category,

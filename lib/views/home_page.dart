@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart'; // Pour formater la date et l'heure
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
-import 'package:searchfield/searchfield.dart'; // Pour l'auto-complétion
+import 'package:searchfield/searchfield.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,11 +10,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Controllers for user input fields
+  // Controllers pour gérer l'entrée utilisateur
   final TextEditingController gareController = TextEditingController();
   final TextEditingController dateTimeController = TextEditingController();
 
-  // Variables to manage station list, selected category, loading status, etc.
+  // Variables pour gérer la liste des gares, la catégorie sélectionnée, le statut de chargement, etc.
   List<String>? stationList;
   String? selectedCategory;
   bool isLoadingStations = false;
@@ -23,7 +22,7 @@ class _HomePageState extends State<HomePage> {
   int newItemsCount = 0;
   bool isFirstConnection = true;
 
-  // List of available categories
+  // Liste des catégories disponibles
   final List<String> categories = [
     'Vêtements',
     'Bagagerie',
@@ -40,10 +39,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _loadLastLaunchDate(); // Load the last launch date to determine if it's the first connection
+    _loadLastLaunchDate(); // Charger la date de dernière visite pour déterminer si c'est la première connexion
   }
 
-  // Load the last launch date from shared preferences
+  // Charger la date de dernière visite depuis les préférences partagées
   Future<void> _loadLastLaunchDate() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? lastLaunchDateString = prefs.getString('lastLaunchDate');
@@ -51,35 +50,35 @@ class _HomePageState extends State<HomePage> {
     if (lastLaunchDateString != null) {
       setState(() {
         lastLaunchDate = DateTime.parse(lastLaunchDateString);
-        isFirstConnection = false; // User has launched the app before
+        isFirstConnection = false; // L'utilisateur a déjà lancé l'application
       });
-      _checkForNewItems(); // Check for new items since the last visit
+      _checkForNewItems(); // Vérifier les nouveaux objets depuis la dernière visite
     } else {
-      // First time launch
+      // Première fois que l'application est lancée
       setState(() {
         isFirstConnection = true;
         lastLaunchDate = DateTime.now();
       });
     }
 
-    // Save the current launch date
+    // Sauvegarder la date de lancement actuelle
     prefs.setString('lastLaunchDate', DateTime.now().toIso8601String());
   }
 
-  // Save the current launch date when leaving the page
+  // Sauvegarder la date de lancement actuelle lorsque l'utilisateur quitte la page
   Future<void> _saveCurrentLaunchDate() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('lastLaunchDate', DateTime.now().toIso8601String());
   }
 
-  // Check for new items found since the last launch
+  // Vérifier les nouveaux objets trouvés depuis la dernière visite
   Future<void> _checkForNewItems() async {
     if (lastLaunchDate != null) {
       final apiService = ApiService();
       try {
         final results = await apiService.fetchLostItemsSinceDate(lastLaunchDate!);
         setState(() {
-          newItemsCount = results.length;
+          newItemsCount = results.length; // Mettre à jour le nombre d'objets trouvés depuis la dernière visite
         });
       } catch (e) {
         print('Erreur lors de la vérification des nouveaux objets : $e');
@@ -87,10 +86,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Fetch the stations list based on user input
+  // Récupérer la liste des gares basée sur l'entrée utilisateur
   Future<void> fetchStations(String query) async {
     setState(() {
-      isLoadingStations = true; // Set loading indicator
+      isLoadingStations = true; // Activer l'indicateur de chargement
     });
 
     try {
@@ -102,12 +101,12 @@ class _HomePageState extends State<HomePage> {
       print('Erreur lors de la récupération des gares: $e');
     } finally {
       setState(() {
-        isLoadingStations = false; // Stop loading indicator
+        isLoadingStations = false; // Désactiver l'indicateur de chargement
       });
     }
   }
 
-  // Build the greeting message widget based on the user's history
+  // Construire le widget de message d'accueil en fonction de l'historique utilisateur
   Widget _buildGreetingMessage() {
     if (!isFirstConnection) {
       if (newItemsCount > 0) {
@@ -124,17 +123,17 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
-    return Container(); // No message for the first connection
+    return Container(); // Aucun message si c'est la première connexion
   }
 
-  // Build a button for selecting a category
+  // Construire un bouton pour sélectionner une catégorie
   Widget _buildCategoryButton(BuildContext context, String label, String assetImagePath) {
     bool isSelected = selectedCategory == label;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          selectedCategory = label; // Update selected category
+          selectedCategory = label; // Mettre à jour la catégorie sélectionnée
         });
       },
       child: Container(
@@ -166,7 +165,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Build the main UI of the page
+  // Construire l'interface principale de la page
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -184,7 +183,7 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome message and logo
+              // Message de bienvenue et logo
               Center(
                 child: Column(
                   children: [
@@ -196,14 +195,14 @@ class _HomePageState extends State<HomePage> {
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 10),
-                    // Display greeting message only if not the first connection
+                    // Afficher le message d'accueil seulement si ce n'est pas la première connexion
                     _buildGreetingMessage(),
                   ],
                 ),
               ),
               SizedBox(height: 20),
 
-              // Search field for station name
+              // Champ de recherche pour le nom de la gare
               SearchField(
                 controller: gareController,
                 suggestions: stationList != null
@@ -221,7 +220,7 @@ class _HomePageState extends State<HomePage> {
                       : Icon(Icons.search),
                 ),
                 onSuggestionTap: (suggestion) {
-                  gareController.text = suggestion.searchKey; // Utilisation correcte de `searchKey`
+                  gareController.text = suggestion.searchKey; // Mettre à jour le champ avec la suggestion sélectionnée
                 },
                 onSearchTextChanged: (query) {
                   if (query.isNotEmpty) {
@@ -231,7 +230,7 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 15),
 
-              // Date and time picker field
+              // Champ de sélection de la date et de l'heure
               TextField(
                 controller: dateTimeController,
                 readOnly: true,
@@ -269,7 +268,7 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 20),
 
-              // Category buttons
+              // Boutons pour sélectionner la catégorie
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -289,7 +288,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisSpacing: 8.0,
                 mainAxisSpacing: 8.0,
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(), // Disable scrolling of GridView
+                physics: NeverScrollableScrollPhysics(), // Désactiver le défilement de GridView
                 children: categories.map((category) {
                   String iconPath = 'assets/icons/default.png';
                   switch (category) {
@@ -329,15 +328,13 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 20),
 
-              // Search button
+              // Bouton de recherche
               Center(
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (gareController.text.isEmpty ||
-                        dateTimeController.text.isEmpty) {
+                    if (gareController.text.isEmpty || dateTimeController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                            'Veuillez remplir les champs obligatoires'),
+                        content: Text('Veuillez remplir les champs obligatoires'),
                       ));
                       return;
                     }
@@ -345,12 +342,6 @@ class _HomePageState extends State<HomePage> {
                     final stationName = gareController.text;
                     final category = selectedCategory ?? 'Divers';
                     final dateTime = dateTimeController.text;
-
-                    // Convertir la date française en DateTime en utilisant 'fr_FR'
-                    DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR').parseLoose(dateTime);
-
-                    // Format ISO 8601
-                    String formattedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss','en_US').format(parsedDateTime);
 
                     try {
                       // Rechercher des objets avec une date exacte
@@ -365,18 +356,16 @@ class _HomePageState extends State<HomePage> {
                         final aroundResults = await ApiService().fetchLostItemsAroundDate(
                           stationName,
                           category,
-                          formattedDateTime,
+                          dateTime,
                         );
 
                         if (aroundResults.isEmpty) {
-                          // Aucun résultat exact ni approximatif, afficher un message
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(
                               'Aucun objet trouvé pour la gare "$stationName" et la catégorie "$category" autour de "$dateTime". Essayez avec des entrées différentes.',
                             ),
                           ));
                         } else {
-                          // Résultats approximatifs trouvés, afficher les résultats et indiquer que c'est autour de la date
                           Navigator.pushNamed(
                             context,
                             '/search_results',
@@ -386,12 +375,10 @@ class _HomePageState extends State<HomePage> {
                               'category': category,
                               'dateTime': dateTime,
                               'isApproximate': true,
-                              // Ajouter cet attribut pour indiquer que les résultats sont approximatifs
                             },
                           );
                         }
                       } else {
-                        // Résultats exacts trouvés, afficher les résultats
                         Navigator.pushNamed(
                           context,
                           '/search_results',
@@ -400,7 +387,7 @@ class _HomePageState extends State<HomePage> {
                             'stationName': stationName,
                             'category': category,
                             'dateTime': dateTime,
-                            'isApproximate': false, // Résultats exacts
+                            'isApproximate': false,
                           },
                         );
                       }
@@ -413,7 +400,7 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 15),
 
-              // "Afficher tout" button
+              // Bouton pour afficher les derniers objets trouvés
               Center(
                 child: ElevatedButton(
                   onPressed: () async {
@@ -440,7 +427,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Save the current launch date when leaving the page
+  // Sauvegarder la date de lancement actuelle lorsque l'utilisateur quitte la page
   @override
   void dispose() {
     _saveCurrentLaunchDate();
