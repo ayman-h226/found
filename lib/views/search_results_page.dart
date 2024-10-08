@@ -9,9 +9,9 @@ class SearchResultsPage extends StatelessWidget {
     'Electronique': ['électronique', 'téléphone', 'ordinateur', 'tablette', 'smartphone', 'appareil photo', 'caméra'],
     'Clés': ['clé', 'badge', 'porte-clés'],
     'Bijoux': ['bijou', 'bracelet', 'collier', 'bague', 'pendentif', 'montre'],
-    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour'],
+    'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour','papiers'],
     'Sport': ['sport', 'ballon', 'raquette', 'équipement sportif', 'vélo'],
-    'Porte-monnaie / Portefeuille': ['portefeuille', 'porte-monnaie', 'carte de crédit', 'CB', 'argent'],
+    'Porte-monnaie': ['argent','portefeuille', 'porte-monnaie', 'carte de crédit', 'CB', 'argent'],
     'Divers': ['parapluie', 'lunettes', 'accessoires', 'divers'],
   };
 
@@ -20,6 +20,17 @@ class SearchResultsPage extends StatelessWidget {
     // Retrieve results passed through the arguments
     final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final List<dynamic>? searchResults = arguments?['results'];
+
+    final args = ModalRoute.of(context)!.settings.arguments as Map;
+    final bool isApproximate = args['isApproximate'] ?? false;
+
+    if (isApproximate) {
+      // Afficher un message spécifique pour indiquer que les résultats sont autour de l'heure spécifiée
+      Text(
+        'Aucun objet trouvé à l\'heure exacte. Voici les objets trouvés autour de cette heure.',
+        style: TextStyle(color: Colors.orange, fontSize: 16),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +149,7 @@ class SearchResultsPage extends StatelessWidget {
             case 'sport':
               iconName = 'sport';
               break;
-            case 'Porte-monnaie / Portefeuille':
+            case 'porte-monnaie':
               iconName = 'portefeuille';
               break;
             case 'divers':

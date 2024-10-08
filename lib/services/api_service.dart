@@ -25,29 +25,25 @@ class ApiService {
     'Electronique': [
       'électronique', 'ordinateur', 'téléphone', 'appareil photo', 'tablette', 'caméra', 'smartphone', 'chargeur', 'accessoires électroniques', 'montre connectée', 'tablette tactile protégée', 'ordinateur portable', 'téléphone portable protégé'
     ],
-    'Clés et Badges': [
-      'clé', 'badge', 'porte-clés', 'carte d\'accès', 'carte de sécurité', 'clé USB', 'serrure', 'cadenas', 'boîte à clés', 'badge d\'identification', 'badge magnétique'
+    'Clés': [
+      'clé', 'Clés' 'badge', 'porte-clés', 'carte d\'accès', 'carte de sécurité', 'clé USB', 'serrure', 'cadenas', 'boîte à clés', 'badge d\'identification', 'badge magnétique'
     ],
-    'Bijoux, Montres': [
+    'Bijoux': [
       'bijoux', 'montres', 'bracelet', 'collier', 'bague', 'pendentif', 'boucles d\'oreilles', 'diamant', 'parure', 'broche'
     ],
-    'Porte-monnaie, Portefeuilles et Cartes': [
-      'porte-monnaie', 'portefeuille', 'argent', 'titres', 'carte bancaire', 'carte de crédit'
+    'Portefeuille': [
+      'porte-monnaie', 'portefeuille', 'carte de crédit', 'CB', 'argent' ,'argent', 'titres', 'carte bancaire', 'carte de crédit'
     ],
-    'Pièces d\'identité et papiers personnels': [
+    'Pièces': [
       'pièces d\'identité', 'carte d\'identité', 'passeport', 'permis de conduire', 'carte Vitale', 'titre de séjour', 'permis de travail', 'document officiel', 'billet', 'autre pièce ou papier personnel'
     ],
-    'Sport et Loisirs': [
+    'Sport': [
       'sport', 'ballon', 'raquette', 'vélo', 'trottinette', 'gants de boxe', 'patins', 'bâton de randonnée', 'sac de sport', 'tente', 'articles de sport', 'outils', 'accessoires'
-    ],
-    'Porte-monnaie / Portefeuille': [
-      'porte-monnaie', 'portefeuille', 'carte de crédit', 'CB', 'argent', 'titres'
     ],
     'Divers': [
       'divers', 'parapluie', 'tente', 'objets divers', 'lunettes', 'accessoires', 'autre', 'inconnus', 'autres divers'
     ],
   };
-
 
   // Fonction pour récupérer les gares en fonction de l'entrée utilisateur
   Future<List<String>> fetchStations(String query) async {
@@ -72,49 +68,83 @@ class ApiService {
     }
   }
 
-  // Fonction pour récupérer les objets trouvés avec des filtres
-  Future<List<dynamic>> fetchLostItems({
-    required String stationName,
-    required String category,
-    required String dateTime,
+  // Fonction pour effectuer les requêtes avec des filtres dynamiques
+  Future<List<dynamic>> _fetchLostItems({
+    String? stationName,
+    String? category,
+    String? dateTime,
+    DateTime? lastLaunchDate,
+    bool exactDate = false,
+    bool aroundDate = false,
+    bool fromLastLaunch = false,
   }) async {
     try {
-      // Initialiser les données de la locale française
       await initializeDateFormatting('fr_FR');
-
-      // Essayer de convertir la date entrée par l'utilisateur en DateTime
-      DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR')
-          .parseLoose(dateTime);
-
-      // Convertir en ISO 8601 pour l'utiliser dans la requête
-      String formattedDateTime = parsedDateTime.toIso8601String();
-
-      // Récupération du dictionnaire de mots-clés associé à la catégorie
-      final keywords = categoryDictionaries[category] ?? [];
-
-      // Construire une requête qui filtre les objets dont le type ou la nature correspond à l'un des mots du dictionnaire
-      final String keywordsQuery = keywords.map((word) => '"$word"').join(
-          ' OR ');
 
       final Map<String, String> queryParams = {
         'dataset': 'objets-trouves-restitution',
         'rows': '20',
-        'refine.gare_origine_r_name': stationName,
-        'order_by': 'date desc',
+        'sort': 'date',
         'timezone': 'Europe/Paris',
       };
 
-      // Ajouter la date en utilisant la version correctement formatée
-      queryParams['q'] = 'date=$formattedDateTime';
+      // Construction de la requête principale `q` avec les filtres
+      String q = '';
 
-      // Ajouter les mots-clés si une catégorie est précisée
-      if (keywords.isNotEmpty) {
-        queryParams['q'] = queryParams['q']! +
-            ' AND (gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
+      // N'ajouter le filtre de la station que si stationName n'est pas null
+      if (stationName != null && stationName.isNotEmpty) {
+        queryParams['refine.gare_origine_r_name'] = stationName;
+
+      }
+
+
+      // Gestion des dates dans la requête
+      if (fromLastLaunch && lastLaunchDate != null) {
+        String formattedLastLaunchDate = DateFormat('yyyy-MM-ddTHH:mm:ss').format(lastLaunchDate);
+        q = 'date >= "$formattedLastLaunchDate"';
+      } else if (dateTime != null && exactDate) {
+        // Conversion de la date spécifiée en ISO 8601
+        try {
+          // Utilisez 'fr_FR' pour le format de date français et spécifiez correctement le format
+          DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR').parseLoose(dateTime);
+          String formattedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(parsedDateTime);
+          q = 'date="$formattedDateTime" AND gc_obo_gare_origine_r_name = "$stationName"';
+
+        } catch (e) {
+          print('Erreur de format de date : $e');
+          throw FormatException('Erreur lors de la conversion de la date');
+        }
+      } else if (dateTime != null && aroundDate) {
+        // Recherche autour de la date spécifiée (±1h)
+        DateTime parsedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').parse(dateTime);
+        DateTime oneHourBefore = parsedDateTime.subtract(Duration(hours: 1));
+        DateTime oneHourAfter = parsedDateTime.add(Duration(hours: 1));
+        String beforeDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(oneHourBefore);
+        String afterDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(oneHourAfter);
+        q = 'date>="$beforeDateTime" AND date<="$afterDateTime" AND gc_obo_gare_origine_r_name = "$stationName"';
+      }
+
+      // Ajout des filtres pour la catégorie
+      if (category != null && categoryDictionaries.containsKey(category)) {
+        final keywords = categoryDictionaries[category] ?? [];
+        final String keywordsQuery = keywords.map((word) => '"$word"').join(' OR ');
+
+        // Ajouter les filtres directement dans la requête
+        if (q.isNotEmpty) {
+          // Si `q` contient déjà des conditions, on ajoute les mots-clés avec `AND`
+          q += ' AND (gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
+        } else {
+          // Sinon, on commence la requête avec les mots-clés
+          q = '(gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
+        }
+      }
+
+      if (q.isNotEmpty) {
+        print(q);
+        queryParams['q'] = q;
       }
 
       final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
-
       print('Requête pour les objets trouvés : $uri');
 
       final response = await http.get(uri);
@@ -128,12 +158,6 @@ class ApiService {
           return record['fields']['gc_obo_date_heure_restitution_c'] == null;
         }).toList();
 
-        // Si aucun objet exact n'est trouvé, récupérer des objets proches de la date/heure entrée
-        if (records.isEmpty) {
-          return await fetchLostItemsAroundDate(
-              stationName, category, formattedDateTime);
-        }
-
         return records;
       } else {
         print('Erreur: ${response.statusCode} - ${response.body}');
@@ -145,109 +169,48 @@ class ApiService {
     }
   }
 
-  // Fonction pour récupérer des objets proches de la date/heure spécifiée
-  Future<List<dynamic>> fetchLostItemsAroundDate(String stationName,
-      String category, String dateTime) async {
-    final keywords = categoryDictionaries[category] ?? [];
-    final String keywordsQuery = keywords.map((word) => '"$word"').join(' OR ');
-
-    final Map<String, String> queryParams = {
-      'dataset': 'objets-trouves-restitution',
-      'rows': '10',
-      'refine.gare_origine_r_name': stationName,
-      'sort': 'date',
-    };
-
-    // Ajouter les mots-clés à la requête si une catégorie est précisée
-    if (keywords.isNotEmpty) {
-      queryParams['q'] =
-      '(gc_obo_type_c:($keywordsQuery) OR gc_obo_nature_c:($keywordsQuery))';
-    }
-
-    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
-
-    print('Requête pour les objets autour de la date : $uri');
-
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['records'];
-    } else {
-      print('Erreur: ${response.statusCode} - ${response.body}');
-      throw Exception(
-          'Erreur lors de la récupération des objets autour de la date');
-    }
+  // Fonction pour récupérer les objets pour une recherche de date exacte
+  Future<List<dynamic>> fetchLostItems({
+    required String stationName,
+    required String category,
+    required String dateTime,
+  }) async {
+    return await _fetchLostItems(
+      stationName: stationName,
+      category: category,
+      dateTime: dateTime,
+      exactDate: true,
+    );
   }
 
-  // Fonction pour récupérer les 100 derniers objets trouvés (à partir de la date actuelle)
-  Future<List<dynamic>> fetchRecentItems() async {
-    final DateTime currentDate = DateTime.now();
-    final String formattedCurrentDate = currentDate.toIso8601String();
-
-    final queryParams = {
-      'dataset': 'objets-trouves-restitution',
-      'rows': '100',
-      'sort': 'date',
-      'q': 'date<=$formattedCurrentDate',
-      // Récupérer les objets jusqu'à la date actuelle
-      'timezone': 'Europe/Paris',
-    };
-
-    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
-
-    print("Requête pour les 100 derniers objets : $uri");
-
-    final response = await http.get(uri);
-    print('Données retournées par l\'API : ${response.body}');
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['records'];
-    } else {
-      print('Erreur: ${response.statusCode} - ${response.body}');
-      throw Exception(
-          'Erreur lors de la récupération des 100 derniers objets trouvés');
-    }
+  // Fonction pour récupérer des objets proches de la date spécifiée
+  Future<List<dynamic>> fetchLostItemsAroundDate(
+      String stationName,
+      String category,
+      String dateTime) async {
+    return await _fetchLostItems(
+      stationName: stationName,
+      category: category,
+      dateTime: dateTime,
+      aroundDate: true,
+    );
   }
 
   // Fonction pour récupérer les objets trouvés depuis une date donnée
   Future<List<dynamic>> fetchLostItemsSinceDate(DateTime lastLaunchDate) async {
-    // Initialiser les données de la locale française pour le formatage des dates
-    await initializeDateFormatting('fr_FR');
+    return await _fetchLostItems(
+      stationName: null,
+      fromLastLaunch: true,
+      lastLaunchDate: lastLaunchDate,
+    );
+  }
 
-    // Formatage de la date en ISO 8601
-    String formattedLastLaunchDate = DateFormat('yyyy-MM-ddTHH:mm:ss').format(
-        lastLaunchDate);
-
-    // Construire les paramètres de requête
-    final queryParams = {
-      'dataset': 'objets-trouves-restitution',
-      'rows': '50',
-      'q': 'date >= "$formattedLastLaunchDate"',
-      'timezone': 'Europe/Paris',
-    };
-
-    // Construire l'URI avec les paramètres
-    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
-
-    print(
-        'Requête pour les objets trouvés depuis la dernière connexion : $uri');
-
-    // Effectuer la requête HTTP
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      // Filtrer les objets qui n'ont pas été restitués
-      List<dynamic> records = data['records'].where((record) {
-        return record['fields']['gc_obo_date_heure_restitution_c'] == null;
-      }).toList();
-      return records;
-    } else {
-      print('Erreur: ${response.statusCode} - ${response.body}');
-      throw Exception(
-          'Erreur lors de la récupération des objets depuis la dernière connexion');
-    }
+  // Fonction pour récupérer les 100 derniers objets trouvés (recherche générique)
+  Future<List<dynamic>> fetchRecentItems() async {
+    final DateTime currentDate = DateTime.now();
+    return await _fetchLostItems(
+      stationName: null,
+      dateTime: currentDate.toIso8601String(),
+    );
   }
 }

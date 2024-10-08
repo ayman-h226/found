@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart'; // Pour formater la date et l'heure
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
@@ -111,13 +112,13 @@ class _HomePageState extends State<HomePage> {
     if (!isFirstConnection) {
       if (newItemsCount > 0) {
         return Text(
-          '$newItemsCount objets qui ont été retrouvés depuis votre dernière visite',
+          '$newItemsCount objets retrouvés depuis votre dernière visite',
           style: TextStyle(fontSize: 18, color: Colors.blue),
           textAlign: TextAlign.center,
         );
       } else {
         return Text(
-          'R-A-S depuis $lastLaunchDate.',
+          'Rien de nouveau depuis votre dernière visite.',
           style: TextStyle(fontSize: 15, color: Colors.blueAccent),
           textAlign: TextAlign.center,
         );
@@ -177,7 +178,7 @@ class _HomePageState extends State<HomePage> {
           fontWeight: FontWeight.bold,
         ),
       ),
-      body: SingleChildScrollView( // Ajout du SingleChildScrollView pour éviter le dépassement
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -220,7 +221,7 @@ class _HomePageState extends State<HomePage> {
                       : Icon(Icons.search),
                 ),
                 onSuggestionTap: (suggestion) {
-                  gareController.text = suggestion.searchKey; // Utiliser 'searchKey' pour obtenir le nom de la gare
+                  gareController.text = suggestion.searchKey; // Utilisation correcte de `searchKey`
                 },
                 onSearchTextChanged: (query) {
                   if (query.isNotEmpty) {
@@ -240,7 +241,6 @@ class _HomePageState extends State<HomePage> {
                   prefixIcon: Icon(Icons.access_time),
                 ),
                 onTap: () async {
-                  // Open date picker
                   DateTime? selectedDate = await showDatePicker(
                     context: context,
                     initialDate: DateTime.now(),
@@ -249,14 +249,12 @@ class _HomePageState extends State<HomePage> {
                   );
 
                   if (selectedDate != null) {
-                    // Open time picker
                     TimeOfDay? selectedTime = await showTimePicker(
                       context: context,
                       initialTime: TimeOfDay.now(),
                     );
 
                     if (selectedTime != null) {
-                      // Format and display selected date and time
                       DateTime selectedDateTime = DateTime(
                         selectedDate.year,
                         selectedDate.month,
@@ -335,9 +333,11 @@ class _HomePageState extends State<HomePage> {
               Center(
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (gareController.text.isEmpty || dateTimeController.text.isEmpty) {
+                    if (gareController.text.isEmpty ||
+                        dateTimeController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Veuillez remplir les champs obligatoires'),
+                        content: Text(
+                            'Veuillez remplir les champs obligatoires'),
                       ));
                       return;
                     }
@@ -346,27 +346,61 @@ class _HomePageState extends State<HomePage> {
                     final category = selectedCategory ?? 'Divers';
                     final dateTime = dateTimeController.text;
 
+                    // Convertir la date française en DateTime en utilisant 'fr_FR'
+                    DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR').parseLoose(dateTime);
+
+                    // Format ISO 8601
+                    String formattedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss','en_US').format(parsedDateTime);
+
                     try {
-                      final results = await ApiService().fetchLostItems(
+                      // Rechercher des objets avec une date exacte
+                      final exactResults = await ApiService().fetchLostItems(
                         stationName: stationName,
                         category: category,
                         dateTime: dateTime,
                       );
 
-                      if (results.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text(
-                              'Aucun objet de type "$category" trouvé pour la gare "$stationName" à l\'heure "$dateTime". Essayez avec des entrées différentes.'),
-                        ));
+                      if (exactResults.isEmpty) {
+                        // Si aucun résultat exact, rechercher des objets autour de la date spécifiée (±1h)
+                        final aroundResults = await ApiService().fetchLostItemsAroundDate(
+                          stationName,
+                          category,
+                          formattedDateTime,
+                        );
+
+                        if (aroundResults.isEmpty) {
+                          // Aucun résultat exact ni approximatif, afficher un message
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                              'Aucun objet trouvé pour la gare "$stationName" et la catégorie "$category" autour de "$dateTime". Essayez avec des entrées différentes.',
+                            ),
+                          ));
+                        } else {
+                          // Résultats approximatifs trouvés, afficher les résultats et indiquer que c'est autour de la date
+                          Navigator.pushNamed(
+                            context,
+                            '/search_results',
+                            arguments: {
+                              'results': aroundResults,
+                              'stationName': stationName,
+                              'category': category,
+                              'dateTime': dateTime,
+                              'isApproximate': true,
+                              // Ajouter cet attribut pour indiquer que les résultats sont approximatifs
+                            },
+                          );
+                        }
                       } else {
+                        // Résultats exacts trouvés, afficher les résultats
                         Navigator.pushNamed(
                           context,
                           '/search_results',
                           arguments: {
-                            'results': results,
+                            'results': exactResults,
                             'stationName': stationName,
                             'category': category,
                             'dateTime': dateTime,
+                            'isApproximate': false, // Résultats exacts
                           },
                         );
                       }
