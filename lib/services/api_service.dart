@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Importer pour initialiser les données de locale
+import 'package:intl/date_symbol_data_local.dart';
 
 class ApiService {
   // URL de base pour récupérer les objets trouvés
@@ -47,7 +47,7 @@ class ApiService {
     }
   }
 
-  // Fonction privée pour effectuer les requêtes avec des filtres dynamiques
+  // Fonction  pour effectuer les requêtes avec des filtres dynamiques
   Future<List<dynamic>> _fetchLostItems({
     String? stationName,
     String? category,

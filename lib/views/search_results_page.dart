@@ -11,7 +11,7 @@ class SearchResultsPage extends StatelessWidget {
     'Bijoux': ['bijou', 'bracelet', 'collier', 'bague', 'pendentif', 'montre'],
     'Pièces': ['carte d\'identité', 'passeport', 'document officiel', 'permis', 'titre de séjour', 'papiers'],
     'Sport': ['sport', 'ballon', 'raquette', 'équipement sportif', 'vélo'],
-    'Porte-monnaie': ['argent', 'portefeuille', 'porte-monnaie', 'carte de crédit', 'CB'],
+    'Portefeuille': ['argent', 'portefeuille', 'porte-monnaie', 'carte de crédit', 'CB'],
     'Divers': ['parapluie', 'lunettes', 'accessoires', 'divers'],
   };
 
@@ -39,7 +39,7 @@ class SearchResultsPage extends StatelessWidget {
     );
   }
 
-  /// Construit un message indiquant que les résultats sont approximatifs
+  // Construit un message indiquant que les résultats sont approximatifs
   Widget _buildApproximateMessage() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -158,7 +158,7 @@ class SearchResultsPage extends StatelessWidget {
             case 'sport':
               iconName = 'sport';
               break;
-            case 'porte-monnaie':
+            case 'portefeuille':
               iconName = 'portefeuille';
               break;
             case 'divers':
