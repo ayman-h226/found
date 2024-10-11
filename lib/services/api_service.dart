@@ -177,7 +177,7 @@ class ApiService {
     );
   }
 
-  // Fonction pour récupérer les 100 derniers objets trouvés (recherche générique)
+  // Fonction pour récupérer les derniers objets trouvés (recherche générique)
   Future<List<dynamic>> fetchRecentItems() async {
     final DateTime currentDate = DateTime.now();
     return await _fetchLostItems(

@@ -344,6 +344,8 @@ class _HomePageState extends State<HomePage> {
                     final dateTime = dateTimeController.text;
 
                     try {
+                      DateTime parsedDateTime = DateFormat('dd MMMM yyyy HH:mm', 'fr_FR').parseLoose(dateTime);
+                      String formattedDateTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(parsedDateTime);
                       // Rechercher des objets avec une date exacte
                       final exactResults = await ApiService().fetchLostItems(
                         stationName: stationName,
@@ -356,7 +358,7 @@ class _HomePageState extends State<HomePage> {
                         final aroundResults = await ApiService().fetchLostItemsAroundDate(
                           stationName,
                           category,
-                          dateTime,
+                          formattedDateTime,
                         );
 
                         if (aroundResults.isEmpty) {
